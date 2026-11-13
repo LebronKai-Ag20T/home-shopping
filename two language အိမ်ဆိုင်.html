@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>အိမ်ဆိုင် အရောင်းစနစ်</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #receiptArea, #receiptArea * { visibility: visible; }
+            #receiptArea {
+                position: absolute; left: 0; top: 0; width: 80mm;
+                padding: 10px; font-family: monospace;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 font-sans text-lg">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-2xl shadow-lg text-center relative">
+        <button onclick="toggleLanguage()" class="absolute top-4 right-4 text-sm bg-gray-100 hover:bg-gray-200 border px-3 py-1.5 rounded-lg font-bold text-gray-700">
+            🌐 <span class="langBtnText">EN</span>
+        </button>
+        <h2 id="loginTitle" class="text-2xl font-bold mb-3 mt-4">🔒 အိမ်ဆိုင် စနစ်သို့ ဝင်ရန်</h2>
+        <p id="loginSubtitle" class="text-base text-gray-600 mb-6">ဆိုင်လျှို့ဝှက်နံပါတ် (PIN) ရိုက်ထည့်ပါ</p>
+        <input type="password" id="pinInput" placeholder="PIN (1234)" class="w-full border-2 p-3.5 rounded-xl mb-4 text-center text-2xl tracking-widest bg-gray-50">
+        <button id="loginBtn" onclick="checkPin()" class="w-full bg-blue-600 text-white p-3.5 rounded-xl hover:bg-blue-700 font-bold text-xl">ဝင်မည်</button>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="mainApp" class="hidden max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        <div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-2">
+            <h1 id="appTitle" class="text-2xl md:text-3xl font-bold text-gray-800">🏡 အိမ်ဆိုင် အရောင်းစနစ်</h1>
+            <div class="flex items-center gap-3">
+                <span id="connectionStatus" class="text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-bold">● Online ချိတ်ဆက်ပြီး</span>
+                <button onclick="toggleLanguage()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-xl font-bold">
+                    🌐 <span class="langBtnText">EN</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Add New Product (လူကြီးတွေအတွက် ရှင်းလင်းသော ကြီးမားသည့် Form) -->
+        <div class="mb-6 p-5 bg-blue-50 rounded-2xl border-2 border-blue-100">
+            <h2 id="addProdTitle" class="text-lg font-bold text-blue-900 mb-3">➕ ပစ္စည်းအသစ် ထည့်ရန်</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <input type="text" id="pName" placeholder="ပစ္စည်းအမည် (ဥပမာ- ရေသန့်)" class="border-2 p-3 rounded-xl bg-white text-base">
+                <input type="number" id="pPrice" placeholder="ဈေးနှုန်း (ကျပ်)" class="border-2 p-3 rounded-xl bg-white text-base">
+                <input type="number" id="pStock" placeholder="လက်ကျန် အရေအတွက်" class="border-2 p-3 rounded-xl bg-white text-base">
+                <button id="saveProdBtn" onclick="addProduct()" class="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 font-bold text-lg shadow">သိမ်းမည်</button>
+            </div>
+        </div>
+
+        <!-- Sales & Cart Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Product List -->
+            <div class="bg-gray-50 p-4 rounded-2xl border">
+                <h2 id="prodListTitle" class="text-lg font-bold mb-3 text-gray-800">📦 ရောင်းရန် ပစ္စည်းစာရင်းများ</h2>
+                <div id="productList" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- Shopping Cart -->
+            <div class="border-2 p-5 rounded-2xl bg-gray-50 flex flex-col justify-between">
+                <div>
+                    <h2 id="cartTitle" class="text-lg font-bold mb-3 text-gray-800">🛒 ခြင်းတောင်း (ငွေရှင်းရန်)</h2>
+                    <div id="cartList" class="space-y-2 mb-4 max-h-52 overflow-y-auto"></div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold mb-4 border-t pt-3 flex justify-between items-center text-gray-800">
+                        <span id="totalLabel">စုစုပေါင်း:</span>
+                        <span class="text-blue-600"><span id="totalPrice">0</span> <span class="currencyText">ကျပ်</span></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="clearCartBtn" onclick="clearCart()" class="bg-gray-200 text-gray-800 p-3 rounded-xl hover:bg-gray-300 font-bold">ဖျက်မည်</button>
+                        <button id="checkoutBtn" onclick="checkout()" class="bg-green-600 text-white p-3 rounded-xl hover:bg-green-700 font-bold shadow">ငွေရှင်း & ဖြတ်ပိုင်းထုတ်</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Sales History -->
+        <div class="border-t pt-6">
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">📊 <span id="salesRecordTitle">ယနေ့ အရောင်းမှတ်တမ်း</span> (<span id="todayDateDisplay"></span>)</h2>
+                    <p class="text-base text-gray-600 mt-1"><span id="dailyRevLabel">ယနေ့ ရောင်းရငွေ စုစုပေါင်း:</span> <span id="dailyTotalSales" class="font-bold text-green-600 text-lg">0</span> <span class="currencyText">ကျပ်</span></p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto border-2 rounded-2xl">
+                <table class="w-full text-left border-collapse text-base">
+                    <thead>
+                        <tr class="bg-gray-100 border-b-2">
+                            <th id="thTime" class="p-3">အချိန်</th>
+                            <th id="thItems" class="p-3">ရောင်းလိုက်သော ပစ္စည်းများ</th>
+                            <th id="thAmount" class="p-3 text-right">ကျသင့်ငွေ</th>
+                            <th id="thReceipt" class="p-3 text-center">ဖြတ်ပိုင်း</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesHistoryBody" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal (ဈေးနှုန်းနှင့် လက်ကျန် ပြင်ရန် Box) -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full shadow-2xl">
+            <h3 id="editModalTitle" class="text-xl font-bold mb-4 text-gray-800">✏️ ပစ္စည်း ပြင်ဆင်ရန်</h3>
+            <input type="hidden" id="editFirebaseKey">
+            <div class="space-y-4">
+                <div>
+                    <label id="editNameLabel" class="block text-sm font-bold text-gray-600 mb-1">ပစ္စည်းအမည်</label>
+                    <input type="text" id="editName" class="w-full border-2 p-3 rounded-xl bg-gray-100 text-base" disabled>
+                </div>
+                <div>
+                    <label id="editPriceLabel" class="block text-sm font-bold text-gray-600 mb-1">ဈေးနှုန်း (ကျပ်)</label>
+                    <input type="number" id="editPrice" class="w-full border-2 p-3 rounded-xl text-base">
+                </div>
+                <div>
+                    <label id="editStockLabel" class="block text-sm font-bold text-gray-600 mb-1">လက်ကျန် အရေအတွက်</label>
+                    <input type="number" id="editStock" class="w-full border-2 p-3 rounded-xl text-base">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="closeEditModal()" id="editCancelBtn" class="bg-gray-200 text-gray-800 p-3 rounded-xl font-bold hover:bg-gray-300">မလုပ်တော့ပါ</button>
+                <button onclick="saveEditedProduct()" id="editSaveBtn" class="bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700 shadow">အပြောင်းအလဲ သိမ်းမည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Print Area -->
+    <div id="receiptArea" class="hidden print:block text-black">
+        <div class="text-center border-b border-dashed border-black pb-2 mb-2">
+            <h2 id="receiptShopName" class="text-lg font-bold">🏡 အိမ်ဆိုင်</h2>
+            <p class="text-xs" id="receiptDate"></p>
+            <p class="text-xs" id="receiptId"></p>
+        </div>
+        <div id="receiptItems" class="text-xs space-y-1 border-b border-dashed border-black pb-2 mb-2"></div>
+        <div class="flex justify-between font-bold text-sm">
+            <span id="receiptTotalLabel">စုစုပေါင်း:</span>
+            <span id="receiptTotal"></span>
+        </div>
+        <p id="receiptFooter" class="text-center text-xs mt-4">ဝယ်ယူအားပေးမှုကို ကျေးဇူးတင်ပါသည်။</p>
+    </div>
+
+    <!-- Firebase SDK Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, push, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        // ==========================================
+        // Firebase Config ထည့်ရန်နေရာ
+        // ==========================================
+       const firebaseConfig = {
+            apiKey: "AIzaSyAIMDS33sZ_6dd5i6DBzpIahNgG-5EJoXE",
+            authDomain: "my-home-refined-oil.firebaseapp.com",
+            databaseURL: "https://my-home-refined-oil-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "my-home-refined-oil",
+            storageBucket: "my-home-refined-oil.firebasestorage.app",
+            messagingSenderId: "1047726256275",
+            appId: "1:1047726256275:web:7867bf36c11bbb44e39d66"
+        };
+
+        const SHOP_PIN = "1234";
+
+        const translations = {
+            my: {
+                langBtn: "English",
+                loginTitle: "🔒 အိမ်ဆိုင် စနစ်သို့ ဝင်ရန်",
+                loginSubtitle: "ဆိုင်လျှို့ဝှက်နံပါတ် (PIN) ရိုက်ထည့်ပါ",
+                loginBtn: "ဝင်မည်",
+                wrongPin: "လျှို့ဝှက်နံပါတ် မှားယွင်းနေပါသည်!",
+                appTitle: "🏡 အိမ်ဆိုင် အရောင်းစနစ်",
+                status: "● Online ချိတ်ဆက်ပြီး",
+                addProdTitle: "➕ ပစ္စည်းအသစ် ထည့်ရန်",
+                pNamePlace: "ပစ္စည်းအမည် (ဥပမာ- ရေသန့်)",
+                pPricePlace: "ဈေးနှုန်း (ကျပ်)",
+                pStockPlace: "လက်ကျန် အရေအတွက်",
+                saveProdBtn: "သိမ်းမည်",
+                invalidProd: "ပစ္စည်းအမည်၊ ဈေးနှုန်းနှင့် လက်ကျန် မှန်ကန်စွာ ထည့်ပါ",
+                confirmDel: "ဒီပစ္စည်းကို ဖျက်မှာ သေချာပါသလား?",
+                prodListTitle: "📦 ရောင်းရန် ပစ္စည်းစာရင်းများ",
+                noProd: "ပစ္စည်း မရှိသေးပါ",
+                stockLabel: "လက်ကျန်:",
+                addBtn: "ရောင်းမည်",
+                editBtn: "ပြင်မည်",
+                cartTitle: "🛒 ခြင်းတောင်း (ငွေရှင်းရန်)",
+                emptyCartMsg: "ပစ္စည်း မရွေးရသေးပါ",
+                cartAlert: "ခြင်းတောင်းထဲတွင် ပစ္စည်းမရှိပါ",
+                outOfStock: "ကုန်ပစ္စည်း လက်ကျန် မလုံလောက်ပါ!",
+                totalLabel: "စုစုပေါင်း:",
+                currency: "ကျပ်",
+                clearCartBtn: "ဖျက်မည်",
+                checkoutBtn: "ငွေရှင်း & ဖြတ်ပိုင်းထုတ်",
+                salesRecordTitle: "ယနေ့ အရောင်းမှတ်တမ်း",
+                dailyRevLabel: "ယနေ့ ရောင်းရငွေ စုစုပေါင်း:",
+                thTime: "အချိန်",
+                thItems: "ရောင်းလိုက်သော ပစ္စည်းများ",
+                thAmount: "ကျသင့်ငွေ",
+                thReceipt: "ဖြတ်ပိုင်း",
+                noSales: "ယနေ့ အရောင်းမှတ်တမ်း မရှိသေးပါ",
+                reprintBtn: "🖨️ ပြန်ထုတ်",
+                receiptShopName: "🏡 အိမ်ဆိုင်",
+                receiptInv: "ဘောင်ချာ:",
+                receiptFooter: "ဝယ်ယူအားပေးမှုကို ကျေးဇူးတင်ပါသည်။",
+                editModalTitle: "✏️ ပစ္စည်း ပြင်ဆင်ရန်",
+                editNameLabel: "ပစ္စည်းအမည်",
+                editPriceLabel: "ဈေးနှုန်း (ကျပ်)",
+                editStockLabel: "လက်ကျန် အရေအတွက်",
+                editCancelBtn: "မလုပ်တော့ပါ",
+                editSaveBtn: "အပြောင်းအလဲ သိမ်းမည်"
+            },
+            en: {
+                langBtn: "မြန်မာ",
+                loginTitle: "🔒 Shop Login",
+                loginSubtitle: "Enter Shop PIN Code",
+                loginBtn: "Login",
+                wrongPin: "Incorrect PIN code!",
+                appTitle: "🏡 Home Shop POS",
+                status: "● Online Connected",
+                addProdTitle: "➕ Add New Product",
+                pNamePlace: "Product Name (e.g., Water)",
+                pPricePlace: "Price (MMK)",
+                pStockPlace: "Stock Quantity",
+                saveProdBtn: "Save Product",
+                invalidProd: "Please enter valid name, price, and stock.",
+                confirmDel: "Are you sure you want to delete this product?",
+                prodListTitle: "📦 Product List",
+                noProd: "No products available",
+                stockLabel: "Stock:",
+                addBtn: "Add",
+                editBtn: "Edit",
+                cartTitle: "🛒 Shopping Cart",
+                emptyCartMsg: "No items in cart",
+                cartAlert: "Cart is empty!",
+                outOfStock: "Not enough stock available!",
+                totalLabel: "Total:",
+                currency: "MMK",
+                clearCartBtn: "Clear",
+                checkoutBtn: "Checkout & Print",
+                salesRecordTitle: "Today's Sales Record",
+                dailyRevLabel: "Total Revenue Today:",
+                thTime: "Time",
+                thItems: "Items Sold",
+                thAmount: "Amount",
+                thReceipt: "Receipt",
+                noSales: "No sales records for today",
+                reprintBtn: "🖨️ Reprint",
+                receiptShopName: "🏡 HOME SHOP",
+                receiptInv: "Invoice:",
+                receiptFooter: "Thank you for your purchase!",
+                editModalTitle: "✏️ Edit Product",
+                editNameLabel: "Product Name",
+                editPriceLabel: "Price (MMK)",
+                editStockLabel: "Stock Quantity",
+                editCancelBtn: "Cancel",
+                editSaveBtn: "Save Changes"
+            }
+        };
+
+        let currentLang = localStorage.getItem('shop_lang') || 'my';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const productsRef = ref(db, 'products');
+        const salesRef = ref(db, 'sales');
+
+        let products = [];
+        let allSalesCache = [];
+        let cart = [];
+
+        window.toggleLanguage = function() {
+            currentLang = currentLang === 'my' ? 'en' : 'my';
+            localStorage.setItem('shop_lang', currentLang);
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const t = translations[currentLang];
+            document.querySelectorAll('.langBtnText').forEach(el => el.innerText = t.langBtn);
+            document.querySelectorAll('.currencyText').forEach(el => el.innerText = t.currency);
+
+            document.getElementById('loginTitle').innerText = t.loginTitle;
+            document.getElementById('loginSubtitle').innerText = t.loginSubtitle;
+            document.getElementById('loginBtn').innerText = t.loginBtn;
+            document.getElementById('appTitle').innerText = t.appTitle;
+            document.getElementById('connectionStatus').innerText = t.status;
+            document.getElementById('addProdTitle').innerText = t.addProdTitle;
+            document.getElementById('pName').placeholder = t.pNamePlace;
+            document.getElementById('pPrice').placeholder = t.pPricePlace;
+            document.getElementById('pStock').placeholder = t.pStockPlace;
+            document.getElementById('saveProdBtn').innerText = t.saveProdBtn;
+            document.getElementById('prodListTitle').innerText = t.prodListTitle;
+            document.getElementById('cartTitle').innerText = t.cartTitle;
+            document.getElementById('totalLabel').innerText = t.totalLabel;
+            document.getElementById('clearCartBtn').innerText = t.clearCartBtn;
+            document.getElementById('checkoutBtn').innerText = t.checkoutBtn;
+            document.getElementById('salesRecordTitle').innerText = t.salesRecordTitle;
+            document.getElementById('dailyRevLabel').innerText = t.dailyRevLabel;
+            document.getElementById('thTime').innerText = t.thTime;
+            document.getElementById('thItems').innerText = t.thItems;
+            document.getElementById('thAmount').innerText = t.thAmount;
+            document.getElementById('thReceipt').innerText = t.thReceipt;
+            document.getElementById('receiptShopName').innerText = t.receiptShopName;
+            document.getElementById('receiptTotalLabel').innerText = t.totalLabel;
+            document.getElementById('receiptFooter').innerText = t.receiptFooter;
+
+            document.getElementById('editModalTitle').innerText = t.editModalTitle;
+            document.getElementById('editNameLabel').innerText = t.editNameLabel;
+            document.getElementById('editPriceLabel').innerText = t.editPriceLabel;
+            document.getElementById('editStockLabel').innerText = t.editStockLabel;
+            document.getElementById('editCancelBtn').innerText = t.editCancelBtn;
+            document.getElementById('editSaveBtn').innerText = t.editSaveBtn;
+
+            renderProducts();
+            renderCart();
+            renderSalesHistory(allSalesCache);
+        }
+
+        window.checkPin = function() {
+            const input = document.getElementById('pinInput').value;
+            if (input === SHOP_PIN) {
+                sessionStorage.setItem('shop_logged_in', 'true');
+                showApp();
+            } else {
+                alert(translations[currentLang].wrongPin);
+            }
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+        }
+
+        if (sessionStorage.getItem('shop_logged_in') === 'true') {
+            showApp();
+        }
+
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        onValue(productsRef, (snapshot) => {
+            const data = snapshot.val();
+            products = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    products.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+            renderProducts();
+        });
+
+        onValue(salesRef, (snapshot) => {
+            const data = snapshot.val();
+            allSalesCache = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    allSalesCache.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+            allSalesCache.reverse();
+            renderSalesHistory(allSalesCache);
+        });
+
+        window.addProduct = function() {
+            const name = document.getElementById('pName').value.trim();
+            const price = parseFloat(document.getElementById('pPrice').value);
+            const stock = parseInt(document.getElementById('pStock').value);
+
+            if (!name || isNaN(price) || price < 0 || isNaN(stock) || stock < 0) {
+                alert(translations[currentLang].invalidProd);
+                return;
+            }
+            const newProdRef = push(productsRef);
+            set(newProdRef, { name, price, stock });
+            document.getElementById('pName').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pStock').value = '';
+        }
+
+        window.openEditModal = function(firebaseKey, name, price, stock) {
+            document.getElementById('editFirebaseKey').value = firebaseKey;
+            document.getElementById('editName').value = name;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('editStock').value = stock;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        window.saveEditedProduct = function() {
+            const key = document.getElementById('editFirebaseKey').value;
+            const price = parseFloat(document.getElementById('editPrice').value);
+            const stock = parseInt(document.getElementById('editStock').value);
+
+            if (isNaN(price) || price < 0 || isNaN(stock) || stock < 0) {
+                alert(translations[currentLang].invalidProd);
+                return;
+            }
+
+            update(ref(db, `products/${key}`), { price, stock })
+                .then(() => {
+                    closeEditModal();
+                });
+        }
+
+        window.deleteProduct = function(firebaseKey) {
+            if (confirm(translations[currentLang].confirmDel)) {
+                remove(ref(db, `products/${firebaseKey}`));
+            }
+        }
+
+        function renderProducts() {
+            const t = translations[currentLang];
+            const list = document.getElementById('productList');
+            list.innerHTML = '';
+            if (products.length === 0) {
+                list.innerHTML = `<p class="text-gray-400 text-base text-center py-6">${t.noProd}</p>`;
+                return;
+            }
+            products.forEach(p => {
+                const stockColor = p.stock <= 5 ? 'text-red-600 font-bold' : 'text-gray-600';
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-white p-3.5 border-2 rounded-xl shadow-2xs">
+                        <div>
+                            <span class="font-bold text-lg">${p.name}</span>
+                            <div class="text-sm space-x-2">
+                                <span class="text-blue-600 font-bold">${p.price.toLocaleString()} ${t.currency}</span>
+                                <span class="${stockColor}">(${t.stockLabel} ${p.stock})</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="openEditModal('${p.firebaseKey}', '${p.name}', ${p.price}, ${p.stock})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 text-sm font-bold rounded-lg">✏️ ${t.editBtn}</button>
+                            <button onclick="addToCart('${p.firebaseKey}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 text-sm font-bold rounded-lg shadow">${t.addBtn}</button>
+                            <button onclick="deleteProduct('${p.firebaseKey}')" class="text-red-500 hover:bg-red-50 p-1.5 rounded-lg font-bold">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.addToCart = function(firebaseKey) {
+            const product = products.find(p => p.firebaseKey === firebaseKey);
+            if (product.stock <= 0) {
+                alert(translations[currentLang].outOfStock);
+                return;
+            }
+            const cartItem = cart.find(item => item.firebaseKey === firebaseKey);
+            const currentQtyInCart = cartItem ? cartItem.qty : 0;
+
+            if (currentQtyInCart + 1 > product.stock) {
+                alert(translations[currentLang].outOfStock);
+                return;
+            }
+
+            if (cartItem) {
+                cartItem.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        window.clearCart = function() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const t = translations[currentLang];
+            const cartList = document.getElementById('cartList');
+            cartList.innerHTML = '';
+            let total = 0;
+            if (cart.length === 0) {
+                cartList.innerHTML = `<p class="text-gray-400 text-base text-center py-6">${t.emptyCartMsg}</p>`;
+            }
+            cart.forEach(item => {
+                total += item.price * item.qty;
+                cartList.innerHTML += `
+                    <div class="flex justify-between items-center text-base bg-white p-3 border rounded-xl">
+                        <span class="font-medium">${item.name} <span class="text-gray-500">(x${item.qty})</span></span>
+                        <span class="font-bold text-blue-600">${(item.price * item.qty).toLocaleString()} ${t.currency}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('totalPrice').innerText = total.toLocaleString();
+        }
+
+        window.checkout = function() {
+            const t = translations[currentLang];
+            if (cart.length === 0) {
+                alert(t.cartAlert);
+                return;
+            }
+
+            // ငွေရှင်းချိန်တွင် လက်ကျန်ပမာဏများကို Database ထဲတွင် အလိုအလျောက် နှုတ်ယူခြင်း
+            cart.forEach(cartItem => {
+                const prod = products.find(p => p.firebaseKey === cartItem.firebaseKey);
+                if (prod) {
+                    const newStock = Math.max(0, prod.stock - cartItem.qty);
+                    update(ref(db, `products/${cartItem.firebaseKey}`), { stock: newStock });
+                }
+            });
+
+            const now = new Date();
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const newSale = {
+                id: 'INV-' + Date.now().toString().slice(-6),
+                date: getTodayString(),
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+                total: totalAmount
+            };
+
+            const newSaleRef = push(salesRef);
+            set(newSaleRef, newSale);
+
+            printReceipt(newSale);
+            cart = [];
+            renderCart();
+        }
+
+        function printReceipt(saleRecord) {
+            const t = translations[currentLang];
+            document.getElementById('receiptDate').innerText = `${saleRecord.date} ${saleRecord.time}`;
+            document.getElementById('receiptId').innerText = `${t.receiptInv} ${saleRecord.id}`;
+            const itemsContainer = document.getElementById('receiptItems');
+            itemsContainer.innerHTML = '';
+            saleRecord.items.forEach(item => {
+                itemsContainer.innerHTML += `
+                    <div class="flex justify-between">
+                        <span>${item.name} x${item.qty}</span>
+                        <span>${(item.price * item.qty).toLocaleString()}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('receiptTotal').innerText = `${saleRecord.total.toLocaleString()} ${t.currency}`;
+            window.print();
+        }
+
+        function renderSalesHistory(allSales) {
+            const t = translations[currentLang];
+            const todayStr = getTodayString();
+            document.getElementById('todayDateDisplay').innerText = todayStr;
+            const todaySales = allSales.filter(s => s.date === todayStr);
+            const tbody = document.getElementById('salesHistoryBody');
+            tbody.innerHTML = '';
+            let dailyTotal = 0;
+
+            if (todaySales.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">${t.noSales}</td></tr>`;
+            } else {
+                todaySales.forEach(sale => {
+                    dailyTotal += sale.total;
+                    const itemSummary = sale.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+                    const saleJson = encodeURIComponent(JSON.stringify(sale));
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 whitespace-nowrap text-gray-600">${sale.time}</td>
+                            <td class="p-3">${itemSummary}</td>
+                            <td class="p-3 text-right font-bold text-blue-600">${sale.total.toLocaleString()} ${t.currency}</td>
+                            <td class="p-3 text-center">
+                                <button onclick="reprintReceipt('${saleJson}')" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 font-bold rounded-lg">${t.reprintBtn}</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('dailyTotalSales').innerText = dailyTotal.toLocaleString();
+        }
+
+        window.reprintReceipt = function(encodedSale) {
+            printReceipt(JSON.parse(decodeURIComponent(encodedSale)));
+        }
+
+        applyLanguage();
+    </script>
+</body>
+</html>
